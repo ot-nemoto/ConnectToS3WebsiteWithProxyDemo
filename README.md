@@ -1,1 +1,0 @@
-# ConnectToS3WebsiteWithProxyDemo
