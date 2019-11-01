@@ -87,4 +87,8 @@ aws s3 rm s3://${LOGGING_BUCKET} --recursive
 
 aws cloudformation delete-stack \
     --stack-name connect-to-s3-website-with-proxy-demo
+
+aws ecr delete-repository \
+    --repository-name connect-to-s3-website-with-proxy-demo \
+    --force
 ```
