@@ -51,7 +51,7 @@ aws cloudformation create-stack \
     --capabilities CAPABILITY_IAM \
     --timeout-in-minutes 10 \
     --parameters ParameterKey=KeyName,ParameterValue=KEY_NAME \
-                 ParameterKey=RepositoryUri,ParameterValue=${REPOSITORY_URI}
+                 ParameterKey=RepositoryUri,ParameterValue=${REPOSITORY_URI} \
     --template-body file://template.yaml
 ```
 
