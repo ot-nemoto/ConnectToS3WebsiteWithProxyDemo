@@ -24,7 +24,7 @@ Resources:
       EnableDnsHostnames: true
       Tags:
       - Key: Name
-        Value: ConnectToS3WebsiteWithProxyDemo-Vpc
+        Value: PrivateS3WithEcsProxyDemo-Vpc
 
   ######                                   #     #
   #     # #    # #####  #      #  ####     ##    # ###### ##### #    #  ####  #####  #    #
@@ -43,14 +43,14 @@ Resources:
       - Fn::GetAZs: !Ref AWS::Region
       Tags:
       - Key: Name
-        Value: ConnectToS3WebsiteWithProxyDemo-PublicSubnet
+        Value: PrivateS3WithEcsProxyDemo-PublicSubnet
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref Vpc
       Tags:
       - Key: Name
-        Value: ConnectToS3WebsiteWithProxyDemo-PublicRouteTable
+        Value: PrivateS3WithEcsProxyDemo-PublicRouteTable
   PublicRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -124,7 +124,7 @@ Resources:
       - Fn::GetAZs: !Ref AWS::Region
       Tags:
       - Key: Name
-        Value: ConnectToS3WebsiteWithProxyDemo-PrivateSubnet1
+        Value: PrivateS3WithEcsProxyDemo-PrivateSubnet1
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
@@ -135,14 +135,14 @@ Resources:
       - Fn::GetAZs: !Ref AWS::Region
       Tags:
       - Key: Name
-        Value: ConnectToS3WebsiteWithProxyDemo-PrivateSubnet2
+        Value: PrivateS3WithEcsProxyDemo-PrivateSubnet2
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref Vpc
       Tags:
       - Key: Name
-        Value: ConnectToS3WebsiteWithProxyDemo-PrivateRouteTable
+        Value: PrivateS3WithEcsProxyDemo-PrivateRouteTable
   PrivateRouteTableAssociation1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -211,7 +211,7 @@ Resources:
   EcsCluster:
     Type: AWS::ECS::Cluster
     Properties: 
-      ClusterName: connect-to-s3-website-with-proxy-demo
+      ClusterName: private-s3-with-ecs-proxy-demo
   EcsService:
     Type: AWS::ECS::Service
     Properties: 
@@ -229,7 +229,7 @@ Resources:
   EcsTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      Family: connect-to-s3-website-with-proxy-demo
+      Family: private-s3-with-ecs-proxy-demo
       ContainerDefinitions:
       - Name: nginx
         Image: !Sub "${RepositoryUri}:latest"
