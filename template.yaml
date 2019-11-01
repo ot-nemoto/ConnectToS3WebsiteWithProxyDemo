@@ -1,0 +1,328 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  AMIId:
+    Type: String
+    Default: ami-0ff21806645c5e492
+  InstanceType:
+    Type: String
+    Default: t2.micro
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+  SourceCidrIp:
+    Type: String
+    Default: 0.0.0.0/0
+  RepositoryUri:
+    Type: String
+
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.38.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+      - Key: Name
+        Value: ConnectToS3WebsiteWithProxyDemo-Vpc
+
+  ######                                   #     #
+  #     # #    # #####  #      #  ####     ##    # ###### ##### #    #  ####  #####  #    #
+  #     # #    # #    # #      # #    #    # #   # #        #   #    # #    # #    # #   #
+  ######  #    # #####  #      # #         #  #  # #####    #   #    # #    # #    # ####
+  #       #    # #    # #      # #         #   # # #        #   # ## # #    # #####  #  #
+  #       #    # #    # #      # #    #    #    ## #        #   ##  ## #    # #   #  #   #
+  #        ####  #####  ###### #  ####     #     # ######   #   #    #  ####  #    # #    #
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: 10.38.0.0/24
+      AvailabilityZone: !Select
+      - 0
+      - Fn::GetAZs: !Ref AWS::Region
+      Tags:
+      - Key: Name
+        Value: ConnectToS3WebsiteWithProxyDemo-PublicSubnet
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+      - Key: Name
+        Value: ConnectToS3WebsiteWithProxyDemo-PublicRouteTable
+  PublicRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref Vpc
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      GatewayId: !Ref InternetGateway
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AMIId
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      IamInstanceProfile: !Ref InstanceProfile
+      NetworkInterfaces:
+      - AssociatePublicIpAddress: true
+        DeviceIndex: 0
+        GroupSet:
+        - !GetAtt Vpc.DefaultSecurityGroup
+        SubnetId: !Ref PublicSubnet
+      Tags:
+      - Key: Name
+        Value: PublicInstance
+  InstanceServerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+       Version: 2012-10-17
+       Statement:
+       - Effect: Allow
+         Principal:
+           Service:
+           - ec2.amazonaws.com
+         Action:
+            - sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+      - !Ref InstanceServerRole
+
+  ######                                         #     #
+  #     # #####  # #    #   ##   ##### ######    ##    # ###### ##### #    #  ####  #####  #    #
+  #     # #    # # #    #  #  #    #   #         # #   # #        #   #    # #    # #    # #   #
+  ######  #    # # #    # #    #   #   #####     #  #  # #####    #   #    # #    # #    # ####
+  #       #####  # #    # ######   #   #         #   # # #        #   # ## # #    # #####  #  #
+  #       #   #  #  #  #  #    #   #   #         #    ## #        #   ##  ## #    # #   #  #   #
+  #       #    # #   ##   #    #   #   ######    #     # ######   #   #    #  ####  #    # #    #
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: 10.38.128.0/24
+      AvailabilityZone: !Select
+      - 0
+      - Fn::GetAZs: !Ref AWS::Region
+      Tags:
+      - Key: Name
+        Value: ConnectToS3WebsiteWithProxyDemo-PrivateSubnet1
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: 10.38.129.0/24
+      AvailabilityZone: !Select
+      - 1
+      - Fn::GetAZs: !Ref AWS::Region
+      Tags:
+      - Key: Name
+        Value: ConnectToS3WebsiteWithProxyDemo-PrivateSubnet2
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+      - Key: Name
+        Value: ConnectToS3WebsiteWithProxyDemo-PrivateRouteTable
+  PrivateRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet1
+  PrivateRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet2
+  S3VPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref Vpc
+      RouteTableIds:
+      - !Ref PrivateRouteTable
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
+  EcrVPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref Vpc
+      SubnetIds:
+      - !Ref PrivateSubnet1
+      - !Ref PrivateSubnet2
+      SecurityGroupIds:
+      - !GetAtt Vpc.DefaultSecurityGroup
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ecr.dkr"
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: true
+  LogsVPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref Vpc
+      SubnetIds:
+      - !Ref PrivateSubnet1
+      - !Ref PrivateSubnet2
+      SecurityGroupIds:
+      - !GetAtt Vpc.DefaultSecurityGroup
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.logs"
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: true
+
+  PrivateInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AMIId
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      NetworkInterfaces:
+      - AssociatePublicIpAddress: true
+        DeviceIndex: 0
+        GroupSet:
+        - !GetAtt Vpc.DefaultSecurityGroup
+        SubnetId: !Ref PrivateSubnet1
+      Tags:
+      - Key: Name
+        Value: PrivateInstance
+
+  ######                                               ######
+  #     # ###### #    # ###### #####   ####  ######    #     # #####   ####  #    # #   #
+  #     # #      #    # #      #    # #      #         #     # #    # #    #  #  #   # #
+  ######  #####  #    # #####  #    #  ####  #####     ######  #    # #    #   ##     #
+  #   #   #      #    # #      #####       # #         #       #####  #    #   ##     #
+  #    #  #       #  #  #      #   #  #    # #         #       #   #  #    #  #  #    #
+  #     # ######   ##   ###### #    #  ####  ######    #       #    #  ####  #    #   #
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+    Properties: 
+      ClusterName: connect-to-s3-website-with-proxy-demo
+  EcsService:
+    Type: AWS::ECS::Service
+    Properties: 
+      Cluster: !GetAtt EcsCluster.Arn
+      TaskDefinition: !Ref EcsTaskDefinition
+      LaunchType: FARGATE
+      DesiredCount: 1
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+          - !GetAtt Vpc.DefaultSecurityGroup
+          Subnets:
+          - !Ref PrivateSubnet1
+          - !Ref PrivateSubnet2
+  EcsTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: connect-to-s3-website-with-proxy-demo
+      ContainerDefinitions:
+      - Name: nginx
+        Image: !Sub "${RepositoryUri}:latest"
+        PortMappings: 
+        - ContainerPort: 80
+          HostPort: 80
+          Protocol: tcp
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group: !Ref EcsLogGroup
+            awslogs-region: !Sub ${AWS::Region}
+            awslogs-stream-prefix: dev
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+      - FARGATE
+      ExecutionRoleArn: !GetAtt EcsTaskExecutionRole.Arn
+      Cpu: 256
+      Memory: 512
+  EcsTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ecs-tasks.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+  EcsLogGroup:
+    Type: AWS::Logs::LogGroup
+
+  #     #                #####
+  #  #  # ###### #####  #     # # ##### ######
+  #  #  # #      #    # #       #   #   #
+  #  #  # #####  #####   #####  #   #   #####
+  #  #  # #      #    #       # #   #   #
+  #  #  # #      #    # #     # #   #   #
+   ## ##  ###### #####   #####  #   #   ######
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      WebsiteConfiguration:
+        IndexDocument: index.html
+      AccessControl: PublicRead
+      LoggingConfiguration:
+        DestinationBucketName: !Ref WebsiteLoggingBucket
+  WebsiteLoggingBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: LogDeliveryWrite
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Statement:
+        - Action:
+          - s3:GetObject
+          Effect: Allow
+          Resource:
+          - !Sub "arn:aws:s3:::${WebsiteBucket}"
+          - !Sub "arn:aws:s3:::${WebsiteBucket}/*"
+          Principal: "*"
+          Condition:
+            IpAddress:
+              aws:SourceIp:
+              - !Ref SourceCidrIp
+        - Action:
+          - s3:GetObject
+          Effect: Allow
+          Resource:
+          - !Sub "arn:aws:s3:::${WebsiteBucket}"
+          - !Sub "arn:aws:s3:::${WebsiteBucket}/*"
+          Principal: "*"
+          Condition:
+            StringEquals:
+              aws:sourceVpc: !Ref Vpc
+
+Outputs:
+  PrivateInstancePrivateIp:
+    Value: !GetAtt PrivateInstance.PrivateIp
+  ManagedInstancesUrl:
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/systems-manager/managed-instances?region=${AWS::Region}"
+  WebsiteBucket:
+    Value: !Ref WebsiteBucket
+  WebsiteUrl:
+    Value: !Sub "http://${WebsiteBucket}.s3-website-${AWS::Region}.amazonaws.com/"
+  WebSiteSecureUrl:
+    Value: !Sub "https://s3-${AWS::Region}.amazonaws.com/${WebsiteBucket}/index.html"
+  WebsiteLoggingBucket:
+    Value: !Ref WebsiteLoggingBucket
