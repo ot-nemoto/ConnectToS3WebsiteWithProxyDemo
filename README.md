@@ -98,51 +98,58 @@ ssh -i key.pem ec2-user@PRIVATE_INSTANCE_PRIVATE_IP
   - これらのURLはパブリックサブネットのルーティングでは設定せず、プライベートサブネットからのみ設定しているので、プライベートサブネットからのみ接続可能
   - プライベートサブネットのECSのコンテナ(リバースプロキシ)では、VPNエンドポイントへリダイレクトするようにしている
 
-リバースプロキシのIPアドレス（プライベートIPアドレス）確認方法
+    **リバースプロキシ**のIPアドレス（プライベートIPアドレス）確認方法
 
-```sh
-CLUSTER_NAME=$(aws cloudformation describe-stacks \
-    --stack-name private-s3-with-ecs-proxy-demo \
-    --query 'Stacks[].Outputs[?OutputKey==`EcsClusterName`].OutputValue' \
-    --output text)
-SERVICE_NAME=$(aws cloudformation describe-stacks \
-    --stack-name private-s3-with-ecs-proxy-demo \
-    --query 'Stacks[].Outputs[?OutputKey==`EcsServiceName`].OutputValue' \
-    --output text)
-echo ${CLUSTER_NAME}; echo ${SERVICE_NAME}
-  # (e.g.)
-  # private-s3-with-ecs-proxy-demo
-  # private-s3-with-ecs-proxy-demo-EcsService-1QFVRXLQF7Z8F
+    ```sh
+    # ECSクラスタ名／サービス名を取得
+    CLUSTER_NAME=$(aws cloudformation describe-stacks \
+        --stack-name private-s3-with-ecs-proxy-demo \
+        --query 'Stacks[].Outputs[?OutputKey==`EcsClusterName`].OutputValue' \
+        --output text)
+    SERVICE_NAME=$(aws cloudformation describe-stacks \
+        --stack-name private-s3-with-ecs-proxy-demo \
+        --query 'Stacks[].Outputs[?OutputKey==`EcsServiceName`].OutputValue' \
+        --output text)
+    echo ${CLUSTER_NAME}; echo ${SERVICE_NAME}
+      # (e.g.)
+      # private-s3-with-ecs-proxy-demo
+      # private-s3-with-ecs-proxy-demo-EcsService-1QFVRXLQF7Z8F
 
-TASK_NAME=$(aws ecs list-tasks \
-    --cluster ${CLUSTER_NAME} \
-    --service-name ${SERVICE_NAME} \
-    --desired-status RUNNING \
-    --query 'taskArns' \
-    --output text | cut -d/ -f2)
-echo ${TASK_NAME}
-  # (e.g.)
-  # c7c313e6-0a46-4dee-a0c4-e1939d0b9a23
+    # ECSタスク名を取得
+    TASK_NAME=$(aws ecs list-tasks \
+        --cluster ${CLUSTER_NAME} \
+        --service-name ${SERVICE_NAME} \
+        --desired-status RUNNING \
+        --query 'taskArns' \
+        --output text | cut -d/ -f2)
+    echo ${TASK_NAME}
+      # (e.g.)
+      # c7c313e6-0a46-4dee-a0c4-e1939d0b9a23
 
-REVERS_PROXY_IPv4=$(aws ecs describe-tasks \
-    --cluster ${CLUSTER_NAME} \
-    --tasks ${TASK_NAME} \
-    --query 'tasks[].containers[].networkInterfaces[].privateIpv4Address' \
-    --output text)
-echo ${REVERS_PROXY_IPv4}
-  # (e.g.)
-  # 10.38.128.28
-WEBSITE_BUCKET=$(aws cloudformation describe-stacks \
-    --stack-name private-s3-with-ecs-proxy-demo \
-    --query 'Stacks[].Outputs[?OutputKey==`WebsiteBucket`].OutputValue' \
-    --output text)
-echo ${WEBSITE_BUCKET}
-  # (e.g.)
-  # private-s3-with-ecs-proxy-demo-websitebucket-1k95wltf29ucf
+    # Reverse ProxyのIPプライベートIPアドレスを取得
+    REVERS_PROXY_IPv4=$(aws ecs describe-tasks \
+        --cluster ${CLUSTER_NAME} \
+        --tasks ${TASK_NAME} \
+        --query 'tasks[].containers[].networkInterfaces[].privateIpv4Address' \
+        --output text)
+    echo ${REVERS_PROXY_IPv4}
+      # (e.g.)
+      # 10.38.128.28
 
-echo "http://${REVERS_PROXY_IPv4}/${WEBSITE_BUCKET}/index.html"
-  #
-```
+    # S3 Bucket名を取得
+    WEBSITE_BUCKET=$(aws cloudformation describe-stacks \
+        --stack-name private-s3-with-ecs-proxy-demo \
+        --query 'Stacks[].Outputs[?OutputKey==`WebsiteBucket`].OutputValue' \
+        --output text)
+    echo ${WEBSITE_BUCKET}
+      # (e.g.)
+      # private-s3-with-ecs-proxy-demo-websitebucket-1k95wltf29ucf
+
+    # Reverse Proxy URL
+    echo "http://${REVERS_PROXY_IPv4}/${WEBSITE_BUCKET}/index.html"
+      # (e.g.)
+      # http://10.38.128.28/private-s3-with-ecs-proxy-demo-websitebucket-1k95wltf29ucf/index.html
+    ```
 
 ## クリーンアップ
 
