@@ -22,9 +22,6 @@ echo ${REPOSITORY_URI}
 
 イメージ作成
 
-- 初回環境構築時、リポジトリを作成するが、イメージは未作成なので、ECSクラスタの構築が完了しない為、
-
-
 ```sh
 IMAGE_TAG=`date +%Y%m%d%H%M%S`
 docker build -t ${REPOSITORY_URI}:${IMAGE_TAG} docker/
@@ -76,23 +73,23 @@ aws s3 cp --content-type text/html index.html s3://${WEBSITE_BUCKET}
 - PublicInstanceへはSSMの**Managed Instances**から接続可能
 - PrivateInstanceへはPublicInstanceログイン後、環境構築時に指定したキーペアで接続可能。
 
-鍵作成とPublicInstanceへのログイン
+  鍵作成とPrivateInstanceへのログイン
 
-```sh
-cat <<EOT > key.pem
------BEGIN RSA PRIVATE KEY-----
-MIIEpAIBAAKCAQEAxtTC+BRf2xeuiuH4vEBzl1cfqTSzJXhquzY2LYWNNpX0kKzmYW+fSc4vgzkm
-...
-AMjGg3t/Ml8Cw8uarpXwJLJnsNooX65OMfeEkFYlVl3yiCty1xZMxi8bdS6ZH+B9PphRLw==
------END RSA PRIVATE KEY-----
-EOT
+  ```sh
+  cat <<EOT > key.pem
+  -----BEGIN RSA PRIVATE KEY-----
+  MIIEpAIBAAKCAQEAxtTC+BRf2xeuiuH4vEBzl1cfqTSzJXhquzY2LYWNNpX0kKzmYW+fSc4vgzkm
+  ...
+  AMjGg3t/Ml8Cw8uarpXwJLJnsNooX65OMfeEkFYlVl3yiCty1xZMxi8bdS6ZH+B9PphRLw==
+  -----END RSA PRIVATE KEY-----
+  EOT
 
-chmod 600 key.pem
+  chmod 600 key.pem
 
-ssh -i key.pem ec2-user@PRIVATE_INSTANCE_PRIVATE_IP
-```
+  ssh -i key.pem ec2-user@PRIVATE_INSTANCE_PRIVATE_IP
+  ```
 
-**PRIVATE_INSTANCE_PRIVATE_IP**は、環境作成したStackのOutputs **PrivateInstancePrivateIp** から確認
+  **PRIVATE_INSTANCE_PRIVATE_IP**は、環境作成したStackのOutputs **PrivateInstancePrivateIp** から確認
 
 - VPNエンドポイントへのURLはStackのOutputs **WebsiteUrl**、**WebSiteSecureUrl** から確認
   - これらのURLはパブリックサブネットのルーティングでは設定せず、プライベートサブネットからのみ設定しているので、プライベートサブネットからのみ接続可能
