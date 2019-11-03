@@ -27,7 +27,7 @@ echo ${REPOSITORY_URI}
 
 ```sh
 IMAGE_TAG=`date +%Y%m%d%H%M%S`
-docker build -t ${REPOSITORY_URI}:${IMAGE_TAG} -f docker/Dockerfile .
+docker build -t ${REPOSITORY_URI}:${IMAGE_TAG} docker/
 docker tag ${REPOSITORY_URI}:${IMAGE_TAG} ${REPOSITORY_URI}:latest
 
 docker images

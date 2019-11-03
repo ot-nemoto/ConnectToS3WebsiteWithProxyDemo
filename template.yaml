@@ -243,6 +243,13 @@ Resources:
             awslogs-group: !Ref EcsLogGroup
             awslogs-region: !Sub ${AWS::Region}
             awslogs-stream-prefix: dev
+        Environment:
+        - Name: REGION
+          Value: !Sub ${AWS::Region}
+        Command:
+        - /bin/sh
+        - -c
+        - envsubst < /tmp/s3.conf > /etc/nginx/conf.d/s3.conf && nginx -g 'daemon off;'
       NetworkMode: awsvpc
       RequiresCompatibilities:
       - FARGATE
