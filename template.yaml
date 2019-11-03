@@ -333,3 +333,7 @@ Outputs:
     Value: !Sub "https://s3-${AWS::Region}.amazonaws.com/${WebsiteBucket}/index.html"
   WebsiteLoggingBucket:
     Value: !Ref WebsiteLoggingBucket
+  EcsClusterName:
+    Value: !Ref EcsCluster
+  EcsServiceName:
+    Value: !GetAtt EcsService.Name
