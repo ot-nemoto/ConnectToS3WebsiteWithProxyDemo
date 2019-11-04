@@ -42,6 +42,16 @@ docker push ${REPOSITORY_URI}
 
 ## デプロイ
 
+**Properties**
+
+|Name|Type|Default|Description|
+|--|--|--|--|
+|AMIId|String|ami-0ff21806645c5e492|インスタンスのマシンイメージID|
+|InstanceType|String|t2.micro|インスタンスタイプ|
+|KeyName|AWS::EC2::KeyPair::KeyName|*require*|キーペア名|
+|SourceCidrIp|String|0.0.0.0/0|デモサイトへの接続許可するCIDR|
+|RepositoryUri|String|*require*|ECRリポジトリURI|
+
 ```sh
 aws cloudformation create-stack \
     --stack-name private-s3-with-ecs-proxy-demo \
@@ -51,6 +61,8 @@ aws cloudformation create-stack \
                  ParameterKey=RepositoryUri,ParameterValue=${REPOSITORY_URI} \
     --template-body file://template.yaml
 ```
+
+※KeyNameは自身の環境で作成済みのKeyNameを指定（未作成の場合は要作成）
 
 ## デモサイトデプロイ
 
