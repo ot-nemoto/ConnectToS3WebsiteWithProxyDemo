@@ -8,6 +8,8 @@
 
 ## 構成
 
+![構成](https://github.com/ot-nemoto/PrivateS3WithEcsProxyDemo/blob/images/PrivateS3WithEcsProxyDemo.png)
+
 ## 事前準備
 
 ECR(コンテナリポジトリ)作成
